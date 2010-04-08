@@ -70,13 +70,18 @@
 ;;   (add-to-list 'wrap-region-except-modes 'conflicting-mode)
 ;;
 ;;
-;; If you don't want to use some punctuations in a certain mode, you
-;; can disable them by saying exactly what punctuations to use in that
-;; mode, like this:
+;; If you don't want to use some punctuation pair in a certain mode,
+;; you can disable them by saying exactly what punctuations to use in
+;; that mode, like this:
 ;;   (wrap-region-add-mode-specific-punctuations 'special-mode '("(" "{"))
 ;;
-;; Note that all punctuations must be in `wrap-region-punctuations-table'.
-;; If not, you'll have to add it using `wrap-region-add-punctuation'.
+;; But this requires that the punctuation pair exist in
+;; `wrap-region-punctuations-table'. If not, you have to provide a
+;; list with the pair:
+;;   (wrap-region-add-mode-specific-punctuations 'special-mode '(("&" "&")))
+;;
+;; You can also do combinations:
+;;   (wrap-region-add-mode-specific-punctuations 'special-mode '(("&" "&") "("))
 
 
 ;;; Code:
@@ -182,7 +187,17 @@ between them.")
 
 (defun wrap-region-right-buddy (left)
   "Returns right buddy to LEFT."
-  (gethash left wrap-region-punctuations-table))
+  (or (gethash left wrap-region-punctuations-table)
+      (progn
+        (let ((punctuations (gethash major-mode wrap-region-mode-specific-punctuations))
+              (punctuation) (right-buddy))
+          (while (and punctuations (not right-buddy))
+            (setq punctuation (car punctuations))
+            (if (listp punctuation)
+                (if (string= (car punctuation) left)
+                    (setq right-buddy (car (cdr punctuation)))))
+            (setq punctuations (cdr punctuations)))
+          right-buddy))))
 
 (defun wrap-region-add-punctuation (left right)
   "Adds a new punctuation pair."
@@ -250,7 +265,9 @@ If the executed command moved the cursor, then insert twice is set inactive."
              (cond (punctuations
                     (let ((table (make-hash-table :test 'equal)))
                       (dolist (punctuation punctuations)
-                        (puthash punctuation (wrap-region-right-buddy punctuation) table))
+                        (if (listp punctuation)
+                            (puthash (car punctuation) (car (cdr punctuation)) table)
+                          (puthash punctuation (wrap-region-right-buddy punctuation) table)))
                       table))
                    (t wrap-region-punctuations-table)))))
 
