@@ -28,4 +28,7 @@
 
  ;; Clear all except modes
  (setq wrap-region-except-modes '())
+ 
+ ;; Clear mode specific punctuations
+ (clrhash wrap-region-mode-specific-punctuations)
  )

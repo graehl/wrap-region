@@ -56,9 +56,11 @@
 ;; in a mode other than default, you do:
 ;;   (add-to-list 'wrap-region-tag-active-modes 'some-tag-mode)
 ;;
+;;
 ;; `wrap-region-punctuations-table' contains a few default
 ;; punctuations that wraps. You can add you own like this:
 ;;   (wrap-region-add-punctuation "#" "#")
+;;
 ;;
 ;; Wrap Region stores a list (`wrap-region-except-modes') of modes in
 ;; which `wrap-region-mode' should not be activated in (note, only if
@@ -66,6 +68,15 @@
 ;;
 ;; You can add new except modes like this:
 ;;   (add-to-list 'wrap-region-except-modes 'conflicting-mode)
+;;
+;;
+;; If you don't want to use some punctuations in a certain mode, you
+;; can disable them by saying exactly what punctuations to use in that
+;; mode, like this:
+;;   (wrap-region-add-mode-specific-punctuations 'special-mode '("(" "{"))
+;;
+;; Note that all punctuations must be in `wrap-region-punctuations-table'.
+;; If not, you'll have to add it using `wrap-region-add-punctuation'.
 
 
 ;;; Code:
@@ -87,7 +98,10 @@ between them.")
     (puthash "["  "]"  table)
     (puthash "<"  ">"  table)
     table)
-  "A map with all punctuations and their right corresponding punctuation.")
+  "A table with all punctuations and their right corresponding punctuation.")
+
+(defvar wrap-region-mode-specific-punctuations (make-hash-table :test 'equal)
+  "A table with all mode specific punctuations.")
 
 (defvar wrap-region-tag-active-modes '(html-mode sgml-mode rhtml-mode)
   "List of modes where < should be used as a tag instead of a regular punctuation.")
@@ -174,6 +188,10 @@ between them.")
   "Adds a new punctuation pair."
   (puthash left right wrap-region-punctuations-table))
 
+(defun wrap-region-add-mode-specific-punctuations (mode punctuations)
+  "Adds mode specific PUNCTUATIONS for MODE."
+  (puthash mode punctuations wrap-region-mode-specific-punctuations))
+
 (defun wrap-region-match (key)
   "Returns t if the current position is an enclosing match with
 KEY. nil otherwise."
@@ -216,11 +234,25 @@ If the executed command moved the cursor, then insert twice is set inactive."
   "Defines all key bindings."
   (if wrap-region-insert-twice
       (define-key wrap-region-mode-map (kbd "DEL") 'wrap-region-backward-delete-char))
+
+  ;; Clear all key bindings
+  (maphash (lambda (left right)
+             (define-key wrap-region-mode-map left nil)
+             (define-key wrap-region-mode-map right nil))
+           wrap-region-punctuations-table)
+
+  ;; Rebind the key bindings
   (maphash (lambda (left right)
              (define-key wrap-region-mode-map left 'wrap-region-with-punctuation-or-insert)
              (if wrap-region-insert-twice
                  (define-key wrap-region-mode-map right 'wrap-region-with-punctuation-or-insert)))
-           wrap-region-punctuations-table))
+           (let ((punctuations (gethash major-mode wrap-region-mode-specific-punctuations)))
+             (cond (punctuations
+                    (let ((table (make-hash-table :test 'equal)))
+                      (dolist (punctuation punctuations)
+                        (puthash punctuation (wrap-region-right-buddy punctuation) table))
+                      table))
+                   (t wrap-region-punctuations-table)))))
 
 ;;;###autoload
 (define-minor-mode wrap-region-mode
