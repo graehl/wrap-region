@@ -1,5 +1,5 @@
 Feature: Wrap Region
-  In order to put text between puctuations and tags
+  In order to put text between punctuations and tags
   As an Emacs user
   I want to wrap it
 
