@@ -12,6 +12,6 @@
        (lambda ()
          (html-mode)))
 
-(When "I start text-mode"
+(When "^I start text-mode$"
        (lambda ()
          (text-mode)))
