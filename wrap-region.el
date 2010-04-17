@@ -247,14 +247,12 @@ If the executed command moved the cursor, then insert twice is set inactive."
 
 (defun wrap-region-define-keys ()
   "Defines all key bindings."
+
+  ;; Clear some key bindings
+  (setcdr wrap-region-mode-map ())
+
   (if wrap-region-insert-twice
       (define-key wrap-region-mode-map (kbd "DEL") 'wrap-region-backward-delete-char))
-
-  ;; Clear all key bindings
-  (maphash (lambda (left right)
-             (define-key wrap-region-mode-map left nil)
-             (define-key wrap-region-mode-map right nil))
-           wrap-region-punctuations-table)
 
   ;; Rebind the key bindings
   (maphash (lambda (left right)
@@ -270,6 +268,12 @@ If the executed command moved the cursor, then insert twice is set inactive."
                           (puthash punctuation (wrap-region-right-buddy punctuation) table)))
                       table))
                    (t wrap-region-punctuations-table)))))
+
+(defadvice switch-to-buffer (after track-output (buffer-or-name &optional norecord) activate)
+  "Switching buffer messes up the key bindings since they are \"buffer local\"."
+  (wrap-region-define-keys))
+(ad-activate 'switch-to-buffer)
+
 
 ;;;###autoload
 (define-minor-mode wrap-region-mode
