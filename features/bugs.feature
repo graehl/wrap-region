@@ -26,3 +26,19 @@ Feature: Wrap Region Bugs
     And I press "("
     Then I should see "'(is some'"
     And I should not see "'(is some)'"
+
+  Scenario: Switch window
+    When I load the following:
+      """
+      (wrap-region-add-mode-specific-punctuations 'html-mode '("'"))
+      (wrap-region-global-mode t)
+      """
+    And I start html-mode
+    And I split the window horizontally
+    And I go to the next window
+    And I am in buffer "new-temp"
+    And I go to the next window
+    And I select "is some"
+    And I press "("
+    Then I should see "(is some"
+    And I should not see "(is some)"

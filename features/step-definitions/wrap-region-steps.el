@@ -13,5 +13,15 @@
          (html-mode)))
 
 (When "^I start text-mode$"
-       (lambda ()
-         (text-mode)))
+      (lambda ()
+        (text-mode)))
+
+(When "^I split the window horizontally$"
+      (lambda ()
+        (let ((window-min-height 0)
+              (window-min-width 0))
+          (split-window-horizontally))))
+
+(When "^I go to the next window$"
+      (lambda ()
+        (other-window 1)))
