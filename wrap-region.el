@@ -132,6 +132,9 @@ between them.")
 (defvar wrap-region-state-pos nil
   "The position when insert twice was last activated. nil if not active.")
 
+(defvar wrap-region-current-buffer nil
+  "Current buffer.")
+
 (defvar wrap-region-except-modes '(calc-mode dired-mode)
   "A list of modes in which `wrap-region-mode' should not be activated.")
 
@@ -269,10 +272,11 @@ If the executed command moved the cursor, then insert twice is set inactive."
                       table))
                    (t wrap-region-punctuations-table)))))
 
-(defadvice switch-to-buffer (after track-output (buffer-or-name &optional norecord) activate)
-  "Switching buffer messes up the key bindings since they are \"buffer local\"."
-  (wrap-region-define-keys))
-(ad-activate 'switch-to-buffer)
+(defun wrap-region-buffer-switch ()
+  "Updates the key bindings if the buffer has been changed."
+  (unless (equal wrap-region-current-buffer (current-buffer))
+    (wrap-region-define-keys)
+    (setq wrap-region-current-buffer (current-buffer))))
 
 
 ;;;###autoload
@@ -284,6 +288,7 @@ If the executed command moved the cursor, then insert twice is set inactive."
   (when wrap-region-mode
     (wrap-region-define-keys)
     (wrap-region-reset)
+    (add-hook 'post-command-hook 'wrap-region-buffer-switch)
     (add-hook 'post-command-hook 'wrap-region-command)
     (run-hooks 'wrap-region-hook)))
 
